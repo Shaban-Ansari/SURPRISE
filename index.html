@@ -5,29 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Valentine ❤️</title>
 
-<!-- CONFETTI -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <style>
 * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
 body {
   margin: 0;
   background: linear-gradient(135deg,#ff758c,#ff7eb3);
   color: #fff;
-  overflow-x: hidden;
+  overflow: hidden;
+}
+
+/* SLIDES OVERLAY SYSTEM */
+.slider {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
 }
 
 .slide {
-  min-height: 100vh;
-  display: none;
+  position: absolute;
+  inset: 0;
+  display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
   padding: 20px;
   text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .6s ease;
 }
-.slide.active { display: flex; }
 
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* BUTTONS */
 button {
   padding: 14px 28px;
   border: none;
@@ -40,7 +56,7 @@ button {
 .yes {
   background: #fff;
   color: #ff4d6d;
-  margin-right: 10px;
+  margin-right: 12px;
 }
 
 .no {
@@ -71,7 +87,8 @@ button {
   transition: transform .4s, background .4s;
 }
 
-.tile.open, .tile.matched {
+.tile.open,
+.tile.matched {
   background: #ffdee9;
   color: #ff4d6d;
   transform: scale(1.05);
@@ -84,14 +101,14 @@ button {
 
 /* CASSETTES */
 .cassettes button {
-  background: rgba(255,255,255,.2);
+  background: rgba(255,255,255,.25);
   margin: 10px;
   color: #fff;
 }
 
 /* LETTER */
 .letter {
-  background: rgba(255,255,255,.15);
+  background: rgba(255,255,255,.18);
   padding: 25px;
   border-radius: 16px;
   max-width: 400px;
@@ -103,14 +120,15 @@ button {
 
 <body>
 
-<!-- AUDIO -->
 <audio id="flipSound" src="flip.mp3"></audio>
 <audio id="winSound" src="win.mp3"></audio>
+
+<div class="slider">
 
 <!-- SLIDE 1 -->
 <div class="slide active">
   <h1>Will you be my Valentine? ❤️</h1>
-  <div>
+  <div style="position:relative; height:80px;">
     <button class="yes" onclick="goTo(1)">Yes</button>
     <button class="no" id="noBtn">No</button>
   </div>
@@ -135,4 +153,88 @@ button {
 
 <!-- SLIDE 4 LETTER -->
 <div class="slide">
-  <div class="letter
+  <div class="letter">
+    <h3>For You ❤️</h3>
+    <p>
+      You didn’t enter my life loudly,<br>
+      yet somehow you became the strongest feeling.<br><br>
+      If love had a rhythm,<br>
+      it would move exactly like you do.
+    </p>
+  </div>
+</div>
+
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+function goTo(i) {
+  slides.forEach(s => s.classList.remove('active'));
+  slides[i].classList.add('active');
+}
+
+/* NO BUTTON LOOP */
+const noBtn = document.getElementById("noBtn");
+noBtn.addEventListener("click", () => {
+  const x = Math.random() * (window.innerWidth - 140);
+  const y = Math.random() * (window.innerHeight - 80);
+  noBtn.style.left = x + "px";
+  noBtn.style.top = y + "px";
+});
+
+/* GAME */
+const icons = ["🍫","🌸","🍫","🌸","🍫","🌸","🍫","🌸"].sort(() => 0.5 - Math.random());
+const board = document.getElementById("board");
+let first = null, lock = false, score = 0;
+
+icons.forEach(icon => {
+  const tile = document.createElement("div");
+  tile.className = "tile";
+  tile.textContent = icon;
+  board.appendChild(tile);
+
+  tile.onclick = () => {
+    if (lock || tile.classList.contains("open")) return;
+    document.getElementById("flipSound").play();
+    tile.classList.add("open");
+
+    if (!first) {
+      first = tile;
+    } else {
+      lock = true;
+      if (first.textContent === tile.textContent) {
+        score++;
+        document.getElementById("score").innerText = score;
+        first.classList.add("matched");
+        tile.classList.add("matched");
+        first = null;
+        lock = false;
+
+        if (score === icons.length / 2) {
+          document.getElementById("winSound").play();
+          confetti({ particleCount: 200, spread: 90 });
+          setTimeout(() => goTo(2), 1500);
+        }
+      } else {
+        setTimeout(() => {
+          first.classList.remove("open");
+          tile.classList.remove("open");
+          first = null;
+          lock = false;
+        }, 700);
+      }
+    }
+  };
+});
+
+/* MUSIC */
+let audio = new Audio();
+function playSong(src) {
+  audio.pause();
+  audio = new Audio(src);
+  audio.play();
+}
+</script>
+
+</body>
+</html>
