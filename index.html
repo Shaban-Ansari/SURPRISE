@@ -3,57 +3,44 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Be My Valentine ❤️</title>
+<title>My Valentine ❤️</title>
+
+<!-- CONFETTI -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <style>
-* {
-  box-sizing: border-box;
-  font-family: 'Poppins', system-ui, sans-serif;
-}
-
+* { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
 body {
   margin: 0;
-  background: linear-gradient(135deg, #ff758c, #ff7eb3);
+  background: linear-gradient(135deg,#ff758c,#ff7eb3);
   color: #fff;
-  text-align: center;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .slide {
-  display: none;
   min-height: 100vh;
-  padding: 20px;
-}
-
-.slide.active {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  display: none;
   align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 20px;
+  text-align: center;
 }
+.slide.active { display: flex; }
 
-h1, h2 {
-  margin-bottom: 15px;
-}
-
-/* Buttons */
 button {
-  padding: 14px 34px;
-  font-size: 18px;
-  border-radius: 30px;
+  padding: 14px 28px;
   border: none;
-  margin: 10px;
+  border-radius: 30px;
+  font-size: 18px;
   cursor: pointer;
+  transition: all .3s ease;
 }
 
 .yes {
   background: #fff;
   color: #ff4d6d;
-}
-
-.yes:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  margin-right: 10px;
 }
 
 .no {
@@ -64,186 +51,88 @@ button {
 }
 
 /* GAME */
-.score {
-  font-size: 18px;
-  margin-bottom: 15px;
-}
-
-.grid {
+.game-board {
   display: grid;
-  grid-template-columns: repeat(4, 70px);
-  gap: 14px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  max-width: 340px;
 }
 
 .tile {
-  width: 70px;
   height: 70px;
   background: #fff;
-  border-radius: 14px;
+  border-radius: 12px;
+  font-size: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
+  color: transparent;
   cursor: pointer;
-  transition: transform 0.3s;
+  transition: transform .4s, background .4s;
 }
 
-.tile.flipped {
-  transform: scale(1.1);
+.tile.open, .tile.matched {
+  background: #ffdee9;
+  color: #ff4d6d;
+  transform: scale(1.05);
+}
+
+.score {
+  margin-bottom: 15px;
+  font-size: 18px;
 }
 
 /* CASSETTES */
-.cassettes {
-  display: flex;
-  gap: 15px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.cassette {
-  width: 110px;
-  height: 60px;
-  background: #fff;
-  color: #ff4d6d;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  cursor: pointer;
+.cassettes button {
+  background: rgba(255,255,255,.2);
+  margin: 10px;
+  color: #fff;
 }
 
 /* LETTER */
 .letter {
-  background: rgba(255,255,255,0.95);
-  color: #333;
+  background: rgba(255,255,255,.15);
   padding: 25px;
-  border-radius: 18px;
-  max-width: 650px;
-  line-height: 1.7;
-}
-
-/* Mobile tweak */
-@media (max-width: 480px) {
-  .grid {
-    grid-template-columns: repeat(4, 60px);
-  }
-  .tile {
-    width: 60px;
-    height: 60px;
-    font-size: 26px;
-  }
+  border-radius: 16px;
+  max-width: 400px;
+  line-height: 1.6;
+  backdrop-filter: blur(10px);
 }
 </style>
 </head>
 
 <body>
 
+<!-- AUDIO -->
+<audio id="flipSound" src="flip.mp3"></audio>
+<audio id="winSound" src="win.mp3"></audio>
+
 <!-- SLIDE 1 -->
-<div class="slide active" id="slide1">
-  <h1>Will you be my Valentine? 💖</h1>
-  <button class="yes" onclick="nextSlide()">Yes</button>
-  <button class="no" id="noBtn">No</button>
-</div>
-
-<!-- SLIDE 2 -->
-<div class="slide" id="slide2">
-  <h2>Collect Love 💐🍫</h2>
-  <div class="score">
-    Flowers: <span id="flowers">0</span> |
-    Chocolates: <span id="chocolates">0</span>
+<div class="slide active">
+  <h1>Will you be my Valentine? ❤️</h1>
+  <div>
+    <button class="yes" onclick="goTo(1)">Yes</button>
+    <button class="no" id="noBtn">No</button>
   </div>
-  <div class="grid" id="grid"></div>
-  <br>
-  <button class="yes" id="gameNext" disabled onclick="nextSlide()">Next</button>
 </div>
 
-<!-- SLIDE 3 -->
-<div class="slide" id="slide3">
-  <h2>Our Songs 🎶</h2>
+<!-- SLIDE 2 GAME -->
+<div class="slide">
+  <h2>Collect Chocolates & Flowers 🍫🌸</h2>
+  <div class="score">Score: <span id="score">0</span></div>
+  <div class="game-board" id="board"></div>
+</div>
+
+<!-- SLIDE 3 MUSIC -->
+<div class="slide">
+  <h2>Play Our Songs 🎶</h2>
   <div class="cassettes">
-    <div class="cassette" onclick="playSong(1)">Cassette 1</div>
-    <div class="cassette" onclick="playSong(2)">Cassette 2</div>
-    <div class="cassette" onclick="playSong(3)">Cassette 3</div>
-  </div>
-  <audio id="audio"></audio>
-  <br>
-  <button class="yes" onclick="nextSlide()">Next</button>
-</div>
-
-<!-- SLIDE 4 -->
-<div class="slide" id="slide4">
-  <h2>Just for You ❤️</h2>
-  <div class="letter">
-    You have a way of turning ordinary moments into something soft and unforgettable.
-    <br><br>
-    Every smile of yours feels like a quiet promise,
-    every word like it was meant just for me.
-    <br><br>
-    This isn’t just a Valentine’s page —
-    it’s a small piece of what I feel for you 💖
+    <button onclick="playSong('song1.mp3')">Cassette 1</button>
+    <button onclick="playSong('song2.mp3')">Cassette 2</button>
+    <button onclick="playSong('song3.mp3')">Cassette 3</button>
   </div>
 </div>
 
-<script>
-let current = 1;
-
-/* Slide control */
-function nextSlide() {
-  document.getElementById(`slide${current}`).classList.remove("active");
-  current++;
-  document.getElementById(`slide${current}`).classList.add("active");
-}
-
-/* No button dodge */
-const noBtn = document.getElementById("noBtn");
-noBtn.addEventListener("touchstart", moveNo);
-noBtn.addEventListener("mouseover", moveNo);
-
-function moveNo() {
-  const x = Math.random() * (window.innerWidth - 120);
-  const y = Math.random() * (window.innerHeight - 60);
-  noBtn.style.left = x + "px";
-  noBtn.style.top = y + "px";
-}
-
-/* GAME LOGIC */
-const grid = document.getElementById("grid");
-const items = ["💐","🍫","💐","🍫","💐","🍫","💐","🍫"];
-let flowerCount = 0;
-let chocolateCount = 0;
-
-items.sort(() => 0.5 - Math.random()).forEach(item => {
-  const tile = document.createElement("div");
-  tile.className = "tile";
-  tile.textContent = "❓";
-
-  tile.onclick = () => {
-    if (tile.classList.contains("flipped")) return;
-    tile.classList.add("flipped");
-    tile.textContent = item;
-
-    if (item === "💐") flowerCount++;
-    if (item === "🍫") chocolateCount++;
-
-    document.getElementById("flowers").textContent = flowerCount;
-    document.getElementById("chocolates").textContent = chocolateCount;
-
-    if (flowerCount + chocolateCount === items.length) {
-      document.getElementById("gameNext").disabled = false;
-    }
-  };
-
-  grid.appendChild(tile);
-});
-
-/* MUSIC */
-function playSong(n) {
-  const audio = document.getElementById("audio");
-  audio.src = `song${n}.mp3`;
-  audio.play();
-}
-</script>
-
-</body>
-</html>
+<!-- SLIDE 4 LETTER -->
+<div class="slide">
+  <div class="letter
